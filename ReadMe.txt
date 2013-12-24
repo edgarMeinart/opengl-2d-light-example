@@ -1,3 +1,3 @@
-2011.02.02
-Peredelal sistemu proverki na poziciju 
-Sdelal napravlenij svet;
+2D OpenGL light engine written on C++
+=
+2011
