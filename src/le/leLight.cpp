@@ -1,5 +1,5 @@
-#include "StdAfx.h"
 #include "leLight.h"
+#include <algorithm>
 
 
 leLight::leLight(void)

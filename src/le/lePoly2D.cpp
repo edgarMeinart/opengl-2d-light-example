@@ -1,5 +1,5 @@
-#include "StdAfx.h"
 #include "lePoly2D.h"
+#include <algorithm>
 
 lePoly2D::lePoly2D()
 {

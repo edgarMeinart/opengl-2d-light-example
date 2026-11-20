@@ -2,8 +2,6 @@
 #include "leMath.h"
 #include "leLight.h"
 #include "lePoly2D.h"
- // DODELAT PROVERKU POZICII SVETA NA NALICIJE OBJEKTOV I
-//NAHOZDENIJE KRAINIH TOCEK!!!!
 
 bool VertexIsEdge(leVec2f prev_point,
 				  leVec2f curr_point,

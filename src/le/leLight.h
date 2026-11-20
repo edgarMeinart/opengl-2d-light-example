@@ -29,7 +29,7 @@ public:
 
 
 	void Move(float x, float y);
-	void leLight::Move(float x, float y,float a,float sa);
+	void Move(float x, float y,float a,float sa);
 
 	leAABB AABB();
 

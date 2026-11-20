@@ -1,4 +1,3 @@
-#include "StdAfx.h"
 #include "LightSystem.h"
 #include <math.h> 
 

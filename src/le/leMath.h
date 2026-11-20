@@ -24,10 +24,10 @@ struct leVec2f
 	leVec2f(float _x,float _y){x = _x;y = _y;}
 	~leVec2f(){};
 
-	leVec2f operator /(const float &scale) const; //ƒелить вектор на скал€рное число 
-	leVec2f operator *(const leVec2f &other) const; //”множить вектор на вектор
-	leVec2f operator +(const leVec2f &other) const; //ѕрибавить к вектору вектор
-	leVec2f operator -(const leVec2f &other) const; //ќтн€ть вектор
+	leVec2f operator /(const float &scale) const; // divide by a scalar
+	leVec2f operator *(const leVec2f &other) const; // component-wise multiply
+	leVec2f operator +(const leVec2f &other) const; // add a vector
+	leVec2f operator -(const leVec2f &other) const; // subtract a vector
 	leVec2f operator -() const;
 
 	bool operator==(leVec2f &other) const;
@@ -38,8 +38,8 @@ struct leVec2f
 
 	bool operator!=(leVec2f &other) const;
 	
-	void Scale(float size);//”множить вектор на скал€рное число !
-	float Length();// ƒлинна вектора
+	void Scale(float size); // multiply by a scalar in place
+	float Length(); // vector length
 	leVec2f Normal();
 }; 
 struct leEdge

@@ -9,9 +9,9 @@ struct lePoly2D
 {
 public:
 
-	int VertNum; //Количество вершин
+	int VertNum; // vertex count
 	leObjectID ID;
-	std::vector <leVec2f> vert; //Вершины
+	std::vector <leVec2f> vert; // vertices
 
 	lePoly2D();
 	~lePoly2D();

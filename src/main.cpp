@@ -1,10 +1,10 @@
-// LightEngine.cpp : Defines the entry point for the console application.
-//
+// LightEngine demo: loads data/map.txt and shows silhouette/shadow-ray detection for 2D lights.
 
-#include "stdafx.h"
+#include <cstdio>
+#include <cstdlib>
 #include "le/LightSystem.h"
 #include "le/leOpenGLRender.h"
-#include <gl/glut.h>
+#include "le/leGL.h"
 
 LightSystem light_system;
 int mainWindow;
@@ -35,7 +35,12 @@ void LoadWorld()
 	int Polygon_count = 0;
 	float X = 0.0f,Y = 0.0f;
 
-	file = fopen("Data/map.txt","rt");
+	file = fopen("data/map.txt","rt");
+	if (!file)
+	{
+		perror("data/map.txt (run from the repository root)");
+		exit(1);
+	}
 
 	ReadLine(file,oneline);
 	sscanf(oneline,"Polygons %d",&Polygon_count);
@@ -215,7 +220,7 @@ void InitGL()
 	
 }
 
-int _tmain(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 	glutInit(&argc,argv);	
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);

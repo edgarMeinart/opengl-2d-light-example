@@ -1,4 +1,3 @@
-#include "StdAfx.h"
 #include "leOpenGLRender.h"
 #define PI  3.14f
 void DragGLLineCircle(float x,float y,float radius)
