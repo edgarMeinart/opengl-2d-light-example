@@ -1,5 +1,5 @@
 #pragma once
-#include "leGL.h"
+#include "../gfx/gl.h"
 #include <vector>
 #include <math.h>
 #include "lePoly2D.h"

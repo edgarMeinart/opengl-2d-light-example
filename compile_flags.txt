@@ -1,0 +1,6 @@
+-std=c++17
+-Isrc
+-Ithird_party/imgui
+-Ithird_party/imgui/backends
+-I/opt/homebrew/include
+-I/usr/local/include

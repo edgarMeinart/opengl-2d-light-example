@@ -1,240 +1,128 @@
-// LightEngine demo: loads data/map.txt and shows silhouette/shadow-ray detection for 2D lights.
+// 2D Light Engine: GLFW window, OpenGL 2.1 context and Dear ImGui setup.
+
+#include "gfx/gl.h"  // before GLFW, which must not pull in its own GL headers
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 
 #include <cstdio>
 #include <cstdlib>
-#include "le/LightSystem.h"
-#include "le/leOpenGLRender.h"
-#include "le/leGL.h"
+#include <cstring>
+#include <initializer_list>
 
-LightSystem light_system;
-int mainWindow;
+#include "app.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl2.h"
 
-float n = 0;
-float x , y ;
-float MouseX,MouseY;
-float Num;
+namespace {
 
-
-float an = 0;
-
-
-//===============World loading=======
-void ReadLine(FILE * file,char *string)
-{
-	
-	do
-	{
-		fgets(string,255,file);
-	}while ((string[0] == '/') || (string[0] == '\n'));
-	return;
-}
-void LoadWorld()
-{
-	FILE *file;
-	char oneline[255];
-	int Polygon_count = 0;
-	float X = 0.0f,Y = 0.0f;
-
-	file = fopen("data/map.txt","rt");
-	if (!file)
-	{
-		perror("data/map.txt (run from the repository root)");
-		exit(1);
-	}
-
-	ReadLine(file,oneline);
-	sscanf(oneline,"Polygons %d",&Polygon_count);
-	printf("Polygons: %d \n",Polygon_count);
-	for (int p_num = 0; p_num < Polygon_count;p_num++)
-	{
-		light_system.AddObject(lePoly2D());
-		int Vertex_count;
-		ReadLine(file,oneline);
-		sscanf(oneline,"Polygon %d",&Vertex_count);
-		printf("Polygon: %d \n",p_num);
-		for (int v_num = 0; v_num < Vertex_count; v_num++)
-		{
-			ReadLine(file,oneline);
-			sscanf(oneline,"%f %f",&X,&Y);
-			light_system.Polygons[p_num].AddVertex(leVec2f(X,Y));
-			printf("Polygon: %d Vertex: %d X: %f Y: %f \n",p_num,v_num,X,Y);
-		}
-	}
-	Polygon_count = 0;
-	X = 0.0f;Y = 0.0f;
-	float Radius = 0.0f;
-	
-	printf("========CIRCLE=========== \n");
-
-	ReadLine(file,oneline);
-	sscanf(oneline,"Circle %d",&Polygon_count);
-	printf("Circles: %d \n",Polygon_count);
-	for (int c_num = 0 ; c_num < Polygon_count; c_num++)
-	{
-		ReadLine(file,oneline);
-		sscanf(oneline,"%f %f %f",&X,&Y,&Radius);
-		light_system.AddObject(leEllipse2D(leVec2f(X,Y),Radius));
-		printf("Circle: %d X: %f Y: %f Radius: %f \n",c_num,X,Y,Radius);
-	}
-
-
-	Polygon_count = 0;
-	X = 0.0f;Y = 0.0f;
-	Radius = 0.0f;
-	float Inten = 0.0f;
-	printf("========LIGHT=========== \n");
-
-	ReadLine(file,oneline);
-	sscanf(oneline,"Lights %d",&Polygon_count);
-	printf("Lights: %d \n",Polygon_count);
-	for (int l_num = 0; l_num < Polygon_count; l_num++)
-	{
-		ReadLine(file,oneline);
-		sscanf(oneline,"Light %f %f %f %f",&X,&Y,&Radius,&Inten);
-		light_system.AddLight(leLight(leVec2f(X,Y),Radius,Inten));
-		printf("Light: %d X %f Y %f Radius %f Inten %f \n",Polygon_count,X,Y,Radius,Inten);
-	}
-	fclose(file);
-
-	light_system.AddLight(leLight(leVec2f(15,15),15,45,15));
-	light_system.AddLight(leLight(leVec2f(32,15),10,110,45));
+void usage(const char* argv0) {
+    std::printf("Usage: %s [--example N] [--list]\n\n", argv0);
+    std::printf("  --example N   start example N directly (1-based, see --list)\n");
+    std::printf("  --list        list the examples and exit\n");
 }
 
-
-
-//===================================
-void DebugDraw()
-{
-	for (int p_num = 0; p_num <(int) light_system.Polygons.size();p_num++)
-	{
-		glColor3f(0.0f,1.0,0.0f);
-		DrawGLLinePolygon(light_system.Polygons[p_num]);
-	}
-	for ( int c_num = 0 ; c_num <(int) light_system.Ellipses.size();c_num++ )
-	{
-		DragGLLineCircle(light_system.Ellipses[c_num].Position.x,light_system.Ellipses[c_num].Position.y,
-			light_system.Ellipses[c_num].Radius);
-	}
-	for (int l_num = 0; l_num < (int) light_system.Lights.size();l_num++)
-	{
-		if (light_system.Lights[l_num].type == le_llight)
-		{
-			glColor3f(1.0f,0.0f,0.0f);
-			DrawGLPoint(light_system.Lights[l_num].Position,4);
-			DragGLLineCircle(light_system.Lights[l_num].Position.x,
-			light_system.Lights[l_num].Position.y,light_system.Lights[l_num].Radius);
-		}
-		if (light_system.Lights[l_num].type == le_flight)
-		{
-			glColor3f(1.0,0.0,0.0);
-			DrawGLLine(light_system.Lights[l_num].Position,light_system.Lights[l_num].v[1]);
-			DrawGLLine(light_system.Lights[l_num].Position,light_system.Lights[l_num].v[2]);
-			DrawGLPoint(light_system.Lights[l_num].Position,4);
-
-		}
-
-
-		for (int i = 0; i < (int)light_system.Edges.size(); i++)
-		{
-			glColor3f(0.0f,0.0f,0.0f);
-			DrawGLPoint(light_system.Edges[i].v1,4);
-			DrawGLPoint(light_system.Edges[i].v2,4);
-			DrawGLLine(light_system.Edges[i].v1,light_system.Edges[i].LightVec1);
-			DrawGLLine(light_system.Edges[i].v2,light_system.Edges[i].LightVec2);
-		}
-	}
-}
-void Display(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |GL_STENCIL_BUFFER_BIT);
-
-
-
-	
-	DebugDraw();
-
-	
-
-	glutSwapBuffers();
+bool hasExtension(const char* name) {
+    const char* all = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+    return all && std::strstr(all, name);
 }
 
-void Resize(int W,int H)
-{
-	glViewport(0,0,W,H);
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glOrtho(0, 50, 0, 50, -10.0f, 100.0f);
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-}
-float n1;
-
-
-void Timer(int)
-{
-	glutSetWindow(mainWindow);
-	glutPostRedisplay();
-	glutTimerFunc(15, Timer, 0);
-
-
-	n += 0.01;
-	n1 += 0.01;
-
-	x = 26 + sin(n) * 15;
-	y = 16 + cos(n) * 15;
-
-	light_system.Lights[0].Move(MouseX,MouseY);
-
-	an += 0.1f;
-	light_system.Lights[1].Move(15,15,an,25);
-
-
-
-
-
-	light_system.CheckLightPosition();
-	light_system.FindEdges();
+void setupStyle() {
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImGui::StyleColorsDark();
+    style.FontSizeBase = 16.0f;
+    style.WindowRounding = 8.0f;
+    style.FrameRounding = 5.0f;
+    style.GrabRounding = 5.0f;
+    style.WindowPadding = ImVec2(14, 12);
+    style.FramePadding = ImVec2(8, 5);
+    style.ItemSpacing = ImVec2(8, 7);
+    ImVec4* c = style.Colors;
+    c[ImGuiCol_Button] = ImVec4(0.20f, 0.24f, 0.32f, 1.0f);
+    c[ImGuiCol_ButtonHovered] = ImVec4(0.95f, 0.62f, 0.25f, 0.85f);
+    c[ImGuiCol_ButtonActive] = ImVec4(1.0f, 0.72f, 0.35f, 1.0f);
+    c[ImGuiCol_Header] = ImVec4(0.20f, 0.24f, 0.32f, 1.0f);
+    c[ImGuiCol_HeaderHovered] = ImVec4(0.95f, 0.62f, 0.25f, 0.6f);
+    c[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.7f, 0.3f, 1.0f);
+    c[ImGuiCol_SliderGrab] = ImVec4(1.0f, 0.65f, 0.3f, 1.0f);
+    c[ImGuiCol_FrameBg] = ImVec4(0.12f, 0.14f, 0.19f, 1.0f);
+    c[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.07f, 0.09f, 1.0f);
 }
 
-void MMF(int x,int y)
-{
-	float n1 = 50.0f / 700.0f;
+}  // namespace
 
-	MouseX = (float) x * n1;
-	MouseY = 50.0f - (float) y * n1;
+int main(int argc, char** argv) {
+    int startExample = -1;
+    for (int i = 1; i < argc; ++i) {
+        if (!std::strcmp(argv[i], "--list")) {
+            const std::vector<ExampleInfo>& list = exampleList();
+            for (size_t e = 0; e < list.size(); ++e) std::printf("%2zu  %s\n", e + 1, list[e].title);
+            return 0;
+        } else if (!std::strcmp(argv[i], "--example") && i + 1 < argc) {
+            startExample = std::atoi(argv[++i]) - 1;
+            if (startExample < 0 || startExample >= static_cast<int>(exampleList().size())) {
+                std::fprintf(stderr, "No example %s (see --list)\n", argv[i]);
+                return 1;
+            }
+        } else {
+            usage(argv[0]);
+            return !std::strcmp(argv[i], "--help") || !std::strcmp(argv[i], "-h") ? 0 : 1;
+        }
+    }
 
+    glfwSetErrorCallback([](int code, const char* msg) { std::fprintf(stderr, "GLFW error %d: %s\n", code, msg); });
+    if (!glfwInit()) return 1;
+    // Legacy 2.1 context: fixed-function matrices + GLSL 1.20 (also the macOS default).
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    GLFWwindow* window = glfwCreateWindow(1280, 800, "2D Light Engine", nullptr, nullptr);
+    if (!window) {
+        glfwTerminate();
+        return 1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
 
+    std::printf("OpenGL %s, %s\n", glGetString(GL_VERSION), glGetString(GL_RENDERER));
+    for (const char* ext : {"GL_EXT_framebuffer_object", "GL_ARB_texture_float"})
+        if (!hasExtension(ext)) {
+            std::fprintf(stderr, "Missing required OpenGL extension %s\n", ext);
+            return 1;
+        }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.Fonts->AddFontDefaultVector();
+    setupStyle();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL2_Init();
+
+    App app;
+    if (!app.init(window, startExample)) {
+        std::fprintf(stderr, "Renderer initialisation failed\n");
+        return 1;
+    }
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        ImGui_ImplOpenGL2_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        app.frame();
+        ImGui::Render();
+        int fbW = 0, fbH = 0;
+        glfwGetFramebufferSize(window, &fbW, &fbH);
+        glViewport(0, 0, fbW, fbH);
+        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window);
+    }
+
+    app.shutdown();
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return 0;
 }
-
-void InitGL()
-{
-	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
-	LoadWorld();
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
-
-
-	
-}
-
-int main(int argc, char* argv[])
-{
-	glutInit(&argc,argv);	
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
-	glutInitWindowSize(700,700); 
-    glutInitWindowPosition(100, 100);
-	mainWindow = glutCreateWindow("LightEngine");
-	glutDisplayFunc(Display);                 
-    glutReshapeFunc(Resize);
-	InitGL();
-	glutMotionFunc(MMF);
-	glutTimerFunc(100, Timer, 0);
-	
-
-	glutMainLoop();
-	return 0;
-}
-
